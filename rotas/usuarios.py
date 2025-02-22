@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException
 from odmantic import ObjectId
 from models import Usuario
 from database import engine
-import re
 
 
 router = APIRouter(
@@ -54,9 +53,18 @@ async def delete_usuario(usuario_id: str):
 
 @router.get("/buscar/", response_model=list[Usuario])
 async def search_usuarios(query: str):
-   
-    regex = re.compile(f".*{query}.*", re.IGNORECASE)
-    usuarios = await engine.find(Usuario, Usuario.nome.match(regex))
+    collection = engine.get_collection(Usuario)
+    pipeline = [
+        {
+            "$match": {
+                "nome": {
+                    "$regex": query,
+                    "$options": "i"
+                }
+            }
+        }
+    ]
+    usuarios = await collection.aggregate(pipeline).to_list(length=None)
     return usuarios
 
 @router.get("/status/contar")

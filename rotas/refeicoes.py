@@ -47,9 +47,3 @@ async def create_refeicao(refeicao: Refeicao) -> Refeicao:
 
     await engine.save(nova_refeicao)
     return
-
-@router.get("/buscar/", response_model=list[Refeicao])
-async def search_refeicoes(query: str):
-    regex = re.compile(f".{query}.", re.IGNORECASE)
-    refeicoes = await engine.find(Refeicao, Refeicao.tipo.match(regex))
-    return refeicoes

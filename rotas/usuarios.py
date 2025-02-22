@@ -1,91 +1,84 @@
 from fastapi import APIRouter, HTTPException
 from odmantic import ObjectId
-import re
-from models import Alimento
+from models import Usuario
 from database import engine
 
 
 router = APIRouter(
-    prefix="/alimentos",
-    tags=["Alimentos"],
+    prefix="/usuarios",
+    tags=["Usuarios"],
 )
 
-@router.post("/", response_model=Alimento)
-async def create_alimento(alimento: Alimento):
-    await engine.save(alimento)
-    return alimento
-
-@router.get("/", response_model=list[Alimento])
-async def get_all_alimentos(
-    skip: int = 0, 
-    limit: int = 10, 
-    sort_by: str = "nome", 
-    order: str = "asc"
-):
-   
-    campos_validos = {
-        "nome": Alimento.nome,
-        "calorias": Alimento.calorias,
-        "proteinas": Alimento.proteinas,
-        "carboidratos": Alimento.carboidratos,
-        "gorduras": Alimento.gorduras,
-        "sodio": Alimento.sodio,
-        "acucar": Alimento.acucar
-    }
-
-    if sort_by not in campos_validos:
-        raise HTTPException(status_code=400, detail="Parâmetro sort_by inválido")
-
-    campo_ordem = campos_validos[sort_by]
-
-
-    if order == "asc":
-        sort_expression = campo_ordem
-    elif order == "desc":
-        sort_expression = -campo_ordem
-    else:
-        raise HTTPException(status_code=400, detail="Parâmetro order inválido")
-
-    alimentos = await engine.find(
-        Alimento, 
-        sort=sort_expression,
-        skip=skip,
-        limit=limit
-    )
-    return alimentos
-
-@router.get("/{alimento_id}", response_model=Alimento)
-async def get_alimento(alimento_id: str):
-   
-    alimento = await engine.find_one(Alimento, Alimento.id == ObjectId(alimento_id))
-    if not alimento:
-        raise HTTPException(status_code=404, detail="Alimento não encontrado")
-    return alimento
-
-@router.put("/{alimento_id}", response_model=Alimento)
-async def update_alimento(alimento_id: str, alimento_data: dict):
+@router.post("/", response_model=Usuario)
+async def create_usuario(usuario: Usuario):
     
-    alimento = await engine.find_one(Alimento, Alimento.id == ObjectId(alimento_id))
-    if not alimento:
-        raise HTTPException(status_code=404, detail="Alimento não encontrado")
-    for key, value in alimento_data.items():
-        setattr(alimento, key, value)
-    await engine.save(alimento)
-    return alimento
+    await engine.save(usuario)
+    return usuario
 
-@router.delete("/{alimento_id}")
-async def delete_alimento(alimento_id: str):
- 
-    alimento = await engine.find_one(Alimento, Alimento.id == ObjectId(alimento_id))
-    if not alimento:
-        raise HTTPException(status_code=404, detail="Alimento não encontrado")
-    await engine.delete(alimento)
-    return {"message": "Alimento deletado com sucesso"}
 
-@router.get("/buscar/", response_model=list[Alimento])
-async def search_alimentos(query: str):
+@router.get("/", response_model=list[Usuario])
+async def get_all_usuarios() -> list[Usuario]:
    
-    regex = re.compile(f".{query}.", re.IGNORECASE)
+    usuarios = await engine.find(Usuario)
+    return usuarios
+
+
+@router.get("/{usuario_id}", response_model=Usuario)
+async def get_usuario(usuario_id: str):
+   
+    usuario = await engine.find_one(Usuario, Usuario.id == ObjectId(usuario_id))
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return usuario
+
+@router.put("/{usuario_id}", response_model=Usuario)
+async def update_usuario(usuario_id: str, usuario_data: dict):
     
-    alimentos = await engine.find(Alimento, Alimento.nome.match(regex))
-    return alimentos
+    usuario = await engine.find_one(Usuario, Usuario.id == ObjectId(usuario_id))
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    for key, value in usuario_data.items():
+        setattr(usuario, key, value)
+    await engine.save(usuario)
+    return usuario
+
+@router.delete("/{usuario_id}")
+async def delete_usuario(usuario_id: str):
+
+    usuario = await engine.find_one(Usuario, Usuario.id == ObjectId(usuario_id))
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    await engine.delete(usuario)
+    return {"message": "Usuário excluído com sucesso"}
+
+@router.get("/buscar/", response_model=list[Usuario])
+async def search_usuarios(query: str):
+    collection = engine.get_collection(Usuario)
+    
+    pipeline = [
+        {
+            "$match": {
+                "nome": {
+                    "$regex": query,
+                    "$options": "i"
+                }
+            }
+        }
+    ]
+    
+    usuarios = await collection.aggregate(pipeline).to_list(length=None)
+    
+    return usuarios
+
+@router.get("/status/contar")
+async def count_usuarios():
+    """
+    Conta o numero de usuarios
+
+    Returns:
+        Objeto: Retorna um objeto com o total de usuario
+    """ 
+    count = await engine.count(Usuario)
+    return {"total_usuarios": count}
+
+

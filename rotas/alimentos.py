@@ -82,10 +82,22 @@ async def delete_alimento(alimento_id: str):
     await engine.delete(alimento)
     return {"message": "Alimento deletado com sucesso"}
 
+
 @router.get("/buscar/", response_model=list[Alimento])
 async def search_alimentos(query: str):
-   
-    regex = re.compile(f".{query}.", re.IGNORECASE)
+    collection = engine.get_collection(Alimento)
     
-    alimentos = await engine.find(Alimento, Alimento.nome.match(regex))
+    pipeline = [
+        {
+            "$match": {
+                "nome": {
+                    "$regex": query,
+                    "$options": "i"
+                }
+            }
+        }
+    ]
+    
+    alimentos = await collection.aggregate(pipeline).to_list(length=None)
+    
     return alimentos

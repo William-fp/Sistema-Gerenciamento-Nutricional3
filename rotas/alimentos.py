@@ -1,55 +1,91 @@
 from fastapi import APIRouter, HTTPException
 from odmantic import ObjectId
-from models import Refeicao, Usuario, Alimento
-from database import engine
 import re
+from models import Alimento
+from database import engine
+
 
 router = APIRouter(
-    prefix="/refeicoes",
-    tags=["Refeicoes"],
+    prefix="/alimentos",
+    tags=["Alimentos"],
 )
 
-@router.get("/", response_model=list[Refeicao])
-async def get_all_refeicoes() -> list[Refeicao]:
-    refeicoes = await engine.find(Refeicao)
-    return refeicoes
+@router.post("/", response_model=Alimento)
+async def create_alimento(alimento: Alimento):
+    await engine.save(alimento)
+    return alimento
 
-@router.get("/{refeicao_id}", response_model=Refeicao)
-async def get_refeicao(refeicao_id: str):
-    refeicao = await engine.find_one(Refeicao, Refeicao.id == ObjectId(refeicao_id))
-    if not refeicao:
-        raise HTTPException(status_code=404, detail="Refeição não encontrada")
-    return refeicao
+@router.get("/", response_model=list[Alimento])
+async def get_all_alimentos(
+    skip: int = 0, 
+    limit: int = 10, 
+    sort_by: str = "nome", 
+    order: str = "asc"
+):
+   
+    campos_validos = {
+        "nome": Alimento.nome,
+        "calorias": Alimento.calorias,
+        "proteinas": Alimento.proteinas,
+        "carboidratos": Alimento.carboidratos,
+        "gorduras": Alimento.gorduras,
+        "sodio": Alimento.sodio,
+        "acucar": Alimento.acucar
+    }
 
-@router.post("/", response_model=Refeicao)
-async def create_refeicao(refeicao: Refeicao) -> Refeicao:
-    """
-    Cria uma refeição e adiciona vários alimentos pelo nome.
-    """
-    usuario = await engine.find_one(Usuario, Usuario.id == ObjectId(refeicao.usuario.id))
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    if sort_by not in campos_validos:
+        raise HTTPException(status_code=400, detail="Parâmetro sort_by inválido")
 
-    alimentos_nomes = [alimento.nome for alimento in refeicao.alimentos]
-    alimentos = []
-    for nome in alimentos_nomes:
-        alimento = await engine.find_one(Alimento, Alimento.nome == nome)
-        if not alimento:
-            raise HTTPException(status_code=404, detail=f"Alimento '{nome}' não encontrado")
-        alimentos.append(alimento)
+    campo_ordem = campos_validos[sort_by]
 
-    nova_refeicao = Refeicao(
-        tipo=refeicao.tipo,
-        data=refeicao.data,
-        usuario=usuario,
-        alimentos=alimentos
+
+    if order == "asc":
+        sort_expression = campo_ordem
+    elif order == "desc":
+        sort_expression = -campo_ordem
+    else:
+        raise HTTPException(status_code=400, detail="Parâmetro order inválido")
+
+    alimentos = await engine.find(
+        Alimento, 
+        sort=sort_expression,
+        skip=skip,
+        limit=limit
     )
+    return alimentos
 
-    await engine.save(nova_refeicao)
-    return
+@router.get("/{alimento_id}", response_model=Alimento)
+async def get_alimento(alimento_id: str):
+   
+    alimento = await engine.find_one(Alimento, Alimento.id == ObjectId(alimento_id))
+    if not alimento:
+        raise HTTPException(status_code=404, detail="Alimento não encontrado")
+    return alimento
 
-@router.get("/buscar/", response_model=list[Refeicao])
-async def search_refeicoes(query: str):
+@router.put("/{alimento_id}", response_model=Alimento)
+async def update_alimento(alimento_id: str, alimento_data: dict):
+    
+    alimento = await engine.find_one(Alimento, Alimento.id == ObjectId(alimento_id))
+    if not alimento:
+        raise HTTPException(status_code=404, detail="Alimento não encontrado")
+    for key, value in alimento_data.items():
+        setattr(alimento, key, value)
+    await engine.save(alimento)
+    return alimento
+
+@router.delete("/{alimento_id}")
+async def delete_alimento(alimento_id: str):
+ 
+    alimento = await engine.find_one(Alimento, Alimento.id == ObjectId(alimento_id))
+    if not alimento:
+        raise HTTPException(status_code=404, detail="Alimento não encontrado")
+    await engine.delete(alimento)
+    return {"message": "Alimento deletado com sucesso"}
+
+@router.get("/buscar/", response_model=list[Alimento])
+async def search_alimentos(query: str):
+   
     regex = re.compile(f".{query}.", re.IGNORECASE)
-    refeicoes = await engine.find(Refeicao, Refeicao.tipo.match(regex))
-    return refeicoes
+    
+    alimentos = await engine.find(Alimento, Alimento.nome.match(regex))
+    return alimentos

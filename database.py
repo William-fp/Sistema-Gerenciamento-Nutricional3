@@ -1,18 +1,14 @@
-from pymongo import MongoClient
+from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient
+from odmantic import AIOEngine
+import os
 
-class DBConnection:
-    def __init__(self):
-        self.__connection_string = "mongodb+srv://hunttergx:enT2SXkYr7ezDOUJ@informacaonutricional.dgmeq.mongodb.net/?retryWrites=true&w=majority&appName=InformacaoNutricional"
-        self.__database_name = "InformacaoNutricional"
-        self.__client = None
-        self.__db_connection = None
+load_dotenv()
 
-    def connect_to_db(self):
-        self.__client = MongoClient(self.__connection_string)
-        self.__db_connection = self.__[self.database_name]
+DATABASE_URL = os.getenv("DATABASE_URL")
+client = AsyncIOMotorClient(DATABASE_URL)
+db = client.mydatabase
+engine = AIOEngine(client=client, database="InformacaoNutricional")
 
-    def get_db_connection(self):
-        return self.__db_connection
-    
-    def get_db_client(self):
-        return self.__client
+def get_engine() -> AIOEngine:
+    return engine

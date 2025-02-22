@@ -1,27 +1,73 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from database import DBConnection
+from fastapi import APIRouter, HTTPException
+from odmantic import ObjectId
+from models import Usuario
+from database import engine
+import re
+
 
 router = APIRouter(
     prefix="/usuarios",
     tags=["Usuarios"],
 )
 
-conn_handle = DBConnection()
-conn = conn_handle.get_db_connection()
-
 @router.post("/", response_model=Usuario)
-def create_usuario(usuario: Usuario, session: Session = Depends(get_session)):
+async def create_usuario(usuario: Usuario):
+    
+    await engine.save(usuario)
+    return usuario
+
+
+@router.get("/", response_model=list[Usuario])
+async def get_all_usuarios() -> list[Usuario]:
+   
+    usuarios = await engine.find(Usuario)
+    return usuarios
+
+
+@router.get("/{usuario_id}", response_model=Usuario)
+async def get_usuario(usuario_id: str):
+   
+    usuario = await engine.find_one(Usuario, Usuario.id == ObjectId(usuario_id))
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return usuario
+
+@router.put("/{usuario_id}", response_model=Usuario)
+async def update_usuario(usuario_id: str, usuario_data: dict):
+    
+    usuario = await engine.find_one(Usuario, Usuario.id == ObjectId(usuario_id))
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    for key, value in usuario_data.items():
+        setattr(usuario, key, value)
+    await engine.save(usuario)
+    return usuario
+
+@router.delete("/{usuario_id}")
+async def delete_usuario(usuario_id: str):
+
+    usuario = await engine.find_one(Usuario, Usuario.id == ObjectId(usuario_id))
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    await engine.delete(usuario)
+    return {"message": "Usuário excluído com sucesso"}
+
+@router.get("/buscar/", response_model=list[Usuario])
+async def search_usuarios(query: str):
+   
+    regex = re.compile(f".*{query}.*", re.IGNORECASE)
+    usuarios = await engine.find(Usuario, Usuario.nome.match(regex))
+    return usuarios
+
+@router.get("/status/contar")
+async def count_usuarios():
     """
-    Cria um usuario
-    Args:
-        usuario (Usuario): Objeto usuario a ser criado
-        session (Session): Sessao do banco de dados
+    Conta o numero de usuarios
 
     Returns:
-        usuario: Usuario criado
+        Objeto: Retorna um objeto com o total de usuario
     """ 
-    session.add(usuario)
-    session.commit()
-    session.refresh(usuario)
-    return usuario
-# nao mexi ainda
+    count = await engine.count(Usuario)
+    return {"total_usuarios": count}
+
+

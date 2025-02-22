@@ -1,5 +1,4 @@
 from odmantic import Model, Reference, Field
-from typing import List
 from datetime import date
 
 class Alimento(Model):
@@ -20,4 +19,4 @@ class Refeicao(Model):
     tipo: str  
     data: date
     usuario: Usuario = Reference()  
-    alimentos: List[Alimento] = Field(default_factory=list)
+    alimentos: list[Alimento] = Field(default_factory=list)

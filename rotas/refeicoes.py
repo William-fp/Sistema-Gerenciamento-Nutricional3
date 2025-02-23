@@ -73,6 +73,28 @@ async def obter_refeicao(refeicao_id: str):
         raise HTTPException(status_code=404, detail="Refeição não encontrada")
     return refeicao
 
+
+@router.get("/{refeicao_id}/calorias", response_model=dict, operation_id="obter_calorias_refeicao")
+async def obter_refeicao_calorias(refeicao_id: str):
+    """
+    Obtém a quantidade total de calorias de uma refeição pelo ID.
+    """
+    refeicao = await engine.find_one(Refeicao, Refeicao.id == ObjectId(refeicao_id))
+    if not refeicao:
+        raise HTTPException(status_code=404, detail="Refeição não encontrada")
+
+    total_calorias = sum(alimento.calorias for alimento in refeicao.alimentos)
+
+    return {
+        "refeicao_id": str(refeicao.id),
+        "tipo": refeicao.tipo,
+        "usuario_id": str(refeicao.usuario.id),
+        "total_calorias": total_calorias,
+    }
+
+
+
+
 @router.put("/{refeicao_id}", response_model=Refeicao, operation_id="atualizar_refeicao")
 async def atualizar_refeicao(
     refeicao_id: str,

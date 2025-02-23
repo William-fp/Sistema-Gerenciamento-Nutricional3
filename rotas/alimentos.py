@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from odmantic import ObjectId
-import re
 from models import Alimento
 from database import engine
+from odmantic.query import desc
 
 
 router = APIRouter(
@@ -17,41 +17,22 @@ async def create_alimento(alimento: Alimento):
 
 @router.get("/", response_model=list[Alimento])
 async def get_all_alimentos(
-    skip: int = 0, 
-    limit: int = 10, 
-    sort_by: str = "nome", 
+    skip: int = 0,
+    limit: int = 10,
+    sort_by: str = "nome",
     order: str = "asc"
 ):
-   
-    campos_validos = {
-        "nome": Alimento.nome,
-        "calorias": Alimento.calorias,
-        "proteinas": Alimento.proteinas,
-        "carboidratos": Alimento.carboidratos,
-        "gorduras": Alimento.gorduras,
-        "sodio": Alimento.sodio,
-        "acucar": Alimento.acucar
-    }
-
-    if sort_by not in campos_validos:
+    # Tenta acessar dinamicamente o atributo de Alimento com o nome passado em sort_by
+    campo = getattr(Alimento, sort_by, None)
+    if campo is None:
         raise HTTPException(status_code=400, detail="Parâmetro sort_by inválido")
-
-    campo_ordem = campos_validos[sort_by]
-
-
-    if order == "asc":
-        sort_expression = campo_ordem
-    elif order == "desc":
-        sort_expression = -campo_ordem
-    else:
+    
+    if order not in ("asc", "desc"):
         raise HTTPException(status_code=400, detail="Parâmetro order inválido")
-
-    alimentos = await engine.find(
-        Alimento, 
-        sort=sort_expression,
-        skip=skip,
-        limit=limit
-    )
+    
+    sort_expression = campo if order == "asc" else desc(campo)
+    
+    alimentos = await engine.find(Alimento, sort=sort_expression, skip=skip, limit=limit)
     return alimentos
 
 @router.get("/{alimento_id}", response_model=Alimento)

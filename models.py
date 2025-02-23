@@ -17,6 +17,5 @@ class Usuario(Model):
 
 class Refeicao(Model):
     tipo: str  
-    data: date
     usuario: Usuario = Reference()  
     alimentos: list[Alimento] = Field(default_factory=list)

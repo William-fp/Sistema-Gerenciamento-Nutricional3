@@ -1,3 +1,16 @@
+# Sistema de Informacao Nutricional - Etapa 3
+Terceira e ultima etapa do trabalho da cadeira de desenvolvimento de software para persistência, com o uso de MongoDB
+
+## Como rodar
+
+```
+git clone https://github.com/LeviLeal/informacao_nutricional_etapa_3.git
+cd informacao_nutricional_etapa_3
+uv run fastapi dev
+```
+
+## Diagrama 
+
 classDiagram
     class Usuario {
         +String nome

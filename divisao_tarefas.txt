@@ -1,0 +1,2 @@
+William: Conexão do banco, criação das rotas, modelos e diagrama
+Levi: Banco do Atlas e integração, rotas com aggregation pipeline, populacao do banco

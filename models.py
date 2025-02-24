@@ -1,5 +1,6 @@
 from odmantic import Model, Reference, Field
-from datetime import date
+from datetime import datetime
+
 
 class Alimento(Model):
     nome: str
@@ -14,6 +15,7 @@ class Usuario(Model):
     nome: str
     idade: int
     peso: float
+    data: datetime
 
 class Refeicao(Model):
     tipo: str  

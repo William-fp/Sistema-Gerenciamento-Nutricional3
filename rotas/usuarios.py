@@ -3,6 +3,7 @@ from odmantic import ObjectId
 from models import Usuario
 from database import engine
 from odmantic.query import desc
+from datetime import datetime
 
 router = APIRouter(
     prefix="/usuarios",
@@ -34,6 +35,17 @@ async def get_all_usuarios(
     sort_expression = campo if order == "asc" else desc(campo)
     usuarios = await engine.find(Usuario, sort=sort_expression, skip=skip, limit=limit)
     return usuarios
+
+@router.get("/usuarios/entre_datas/", response_model=list[Usuario])
+async def get_usuarios_entre_datas(
+    data_inicial: datetime = Query(...),
+    data_final: datetime = Query(...)
+):
+    data_inicial = data_inicial.replace(hour=0, minute=0, second=0, microsecond=0)
+    data_final = data_final.replace(hour=23, minute=59, second=59, microsecond=999999)
+    eventos = await engine.find(Usuario, Usuario.data >= data_inicial, Usuario.data <= data_final)
+    return eventos
+
 
 @router.get("/{usuario_id}", response_model=Usuario)
 async def get_usuario(usuario_id: str):

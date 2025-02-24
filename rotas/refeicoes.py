@@ -92,9 +92,6 @@ async def obter_refeicao_calorias(refeicao_id: str):
         "total_calorias": total_calorias,
     }
 
-
-
-
 @router.put("/{refeicao_id}", response_model=Refeicao, operation_id="atualizar_refeicao")
 async def atualizar_refeicao(
     refeicao_id: str,

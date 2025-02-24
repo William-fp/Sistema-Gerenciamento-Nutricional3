@@ -1,5 +1,5 @@
 # Sistema de Informacao Nutricional - Etapa 3
-Terceira e ultima etapa do trabalho da cadeira de desenvolvimento de software para persistência, com o uso de MongoDB
+Terceira e ultima etapa do trabalho da cadeira de desenvolvimento de software para persistência, com o uso de MongoDB Trabalho em conjunto LeviLeal
 
 ## Como rodar
 
